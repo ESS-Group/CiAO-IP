@@ -26,22 +26,22 @@
 
 aspect Little_Endian {
   
-  static UInt16 htons_(UInt16 n){
+  UInt16 htons_(UInt16 n){
     return ((n & 0xff) << 8) | ((n & 0xff00) >> 8);
   }
 
-  static inline UInt16 ntohs_(UInt16 n){
+  UInt16 ntohs_(UInt16 n){
     return htons_(n);
   }
 
-  static UInt32 htonl_(UInt32 n) {
+  UInt32 htonl_(UInt32 n) {
     return ((n & 0xff) << 24) |
            ((n & 0xff00) << 8) |
            ((n & 0xff0000UL) >> 8) |
            ((n & 0xff000000UL) >> 24);
   }
 
-  static inline UInt32 ntohl_(UInt32 n){
+  UInt32 ntohl_(UInt32 n){
     return htonl_(n);
   }
   

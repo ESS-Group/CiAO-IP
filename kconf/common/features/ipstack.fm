@@ -1,0 +1,326 @@
+menuconfig ipstack
+	bool "IP-Stack"
+
+	menu "Link layer"
+		depends on ipstack
+
+		menu "Supported Link Types"
+
+			config ipstack_linklayer_ethernet
+				bool "Ethernet"
+
+		endmenu
+
+		menuconfig ipstack_linklayer_offloading
+			bool "Hardware Checksumming Support"
+
+			config ipstack_linklayer_offloading_tx
+				depends on ipstack_linklayer_offloading
+				bool "Tx Hardware Checksum Offloading Support"
+
+			config ipstack_linklayer_offloading_rx
+				depends on ipstack_linklayer_offloading
+				bool "Rx Hardware Checksum Offloading Support"
+
+    endmenu
+
+	menuconfig ipstack_ipv4
+		depends on ipstack
+		bool "IPv4 Support"
+
+		menuconfig ipstack_ipv4_send
+			depends on ipstack_ipv4
+			bool "IPv4 Sending"
+
+		menuconfig ipstack_ipv4_recv
+			depends on ipstack_ipv4
+			bool "IPv4 Receiving"
+
+			config ipstack_ipv4_recv_fragments
+				depends on ipstack_ipv4_recv && ipstack_clock
+				bool "IPv4 Fragment Reassembly"
+
+		menuconfig ipstack_ipv4_fwd
+			depends on ipstack_ipv4
+			select ipstack_ipv4_recv
+			bool "IPv4 Forwarding (not implemented yet)"
+
+	menuconfig ipstack_arp
+		depends on ipstack
+		bool "ARP Support"
+
+		menuconfig ipstack_arp_ipv4
+			depends on ipstack_arp
+			bool "IPv4 over Ethernet"
+
+			config ipstack_arp_ipv4_request
+				depends on ipstack_arp_ipv4 && ipstack_clock
+				bool "ARP Request"
+				default y
+			
+			config ipstack_arp_ipv4_reply
+				depends on ipstack_arp_ipv4
+				bool "ARP Reply"
+				default y
+
+			config ipstack_arp_ipv4_static
+				depends on ipstack_arp_ipv4
+				bool "Static ARP Cache Entries"
+				default n
+
+		menuconfig ipstack_arp_timeout
+			depends on ipstack_arp && ipstack_clock
+			bool "ARP Cache Timeout"
+
+
+	menu "Autosar OS Integration"
+		depends on ipstack
+		
+		menuconfig ipstack_irqsync
+			bool "Interrupt Synchronization"
+			default y
+			help
+				You really want this
+				
+		menuconfig ipstack_clock
+			bool "SystemClock Support"
+			default y
+			help
+				Required for computing timeouts (ARP, TCP, ...)	
+
+		menuconfig ipstack_autosar_event
+			bool "Event Support"
+			default y
+			help
+				Needed for blocking packet reception. To use, your application needs to define an Event with the name "IPStackReceiveEvent" that needs to be marked as used by all tasks that call the receive() function on a socket.
+
+		menuconfig ipstack_autosar_alarm
+			select ipstack_autosar_event
+			bool "Alarm Support"
+			depends on ipstack_tcp
+			default y
+			help
+				Needed for TCP timeouts. To use, your application needs to define an alarm per task that uses TCP sockets. The alarm must be configured to set the "IPStackReceiveEvent" for the corresponding task. The underlying counter should be configured with a major tick interval of 1ms.
+		
+		menuconfig ipstack_autosar_reschudule
+			bool "Reschedule Tasks"
+			default y
+			depends on ipstack_arp_ipv4_request || ipstack_udp_ipv4_send
+			help
+				Allow the IP-Stack to reschedule other tasks while waiting.
+				This feature makes use of AS::Schedule() if a task is waiting.
+		
+			config ipstack_autosar_reschudule_arp_ipv4_request
+				depends on ipstack_autosar_reschudule && ipstack_arp_ipv4_request
+				bool "Reschedule while ARP requests"
+				default y
+				help
+					Allow the IP-Stack to reschedule other tasks while waiting for an ARP reply.
+					If not selected, polling is used instead for waiting with an upper limit of 3 seconds.
+		
+			config ipstack_autosar_reschudule_udp_ipv4_send
+				depends on ipstack_autosar_reschudule && ipstack_udp_ipv4_send
+				bool "Reschedule while sending UDP data"
+				default y
+				help
+					Allow the IP-Stack to reschedule other tasks while waiting for an UDP packet to be sent.
+					If not selected, polling is used instead for waiting until the hardware finished sending.
+
+	endmenu
+
+	menuconfig ipstack_icmp
+		depends on ipstack
+		bool "ICMP Support"
+
+		menuconfig ipstack_icmp_ipv4
+			depends on ipstack_icmp
+			bool "ICMP over IPv4"
+			select ipstack_ipv4
+			select ipstack_ipv4_recv
+
+			menuconfig ipstack_icmp_ipv4_echoreply
+				depends on ipstack_icmp_ipv4
+				bool "ICMP Echo reply"
+				default y
+
+			menuconfig ipstack_icmp_ipv4_destinationunreachable
+				depends on ipstack_icmp_ipv4
+				bool "ICMP Destination Unreachable"
+				default n
+
+				config ipstack_icmp_ipv4_destinationunreachable_protocolunreachable
+					depends on ipstack_icmp_ipv4_destinationunreachable
+					bool "ICMP Protocol Unreachable"
+					default y
+
+				config ipstack_icmp_ipv4_destinationunreachable_portunreachable
+					depends on ipstack_icmp_ipv4_destinationunreachable && ipstack_udp_ipv4
+					bool "ICMP Port Unreachable"
+					default y
+
+
+	menuconfig ipstack_udp
+		depends on ipstack
+		bool "UDP Support"
+
+		menuconfig ipstack_udp_ipv4
+			depends on ipstack_udp
+			bool "UDP over IPv4"
+			select ipstack_ipv4
+
+			menuconfig ipstack_udp_ipv4_send
+				depends on ipstack_udp_ipv4
+				bool "UDP Sending"
+				select ipstack_ipv4_send
+
+				config ipstack_udp_ipv4_send_checksum
+					depends on ipstack_udp_ipv4_send
+					bool "UDP Tx Checksumming"
+					default y
+
+			menuconfig ipstack_udp_ipv4_recv
+				depends on ipstack_udp_ipv4
+				bool "UDP Receiving"
+				select ipstack_ipv4_recv
+
+				config ipstack_udp_ipv4_recv_checksum
+					depends on ipstack_udp_ipv4_recv
+					bool "UDP Rx Checksumming"
+					default y
+
+	menuconfig ipstack_tcp
+		depends on ipstack && ipstack_clock
+		bool "TCP Support"
+
+		menuconfig ipstack_tcp_ipv4
+			depends on ipstack_tcp
+			bool "TCP over IPv4"
+			select ipstack_ipv4
+			select ipstack_ipv4_send
+			select ipstack_ipv4_recv
+
+		menuconfig ipstack_tcp_ipv4_client
+			depends on ipstack_tcp_ipv4
+			bool "TCP Client Sockets"
+
+		menuconfig ipstack_tcp_ipv4_listen
+			depends on ipstack_tcp_ipv4
+			bool "TCP Listen Sockets (Server)"
+
+		menuconfig ipstack_tcp_ipv4_reset
+			depends on ipstack_tcp_ipv4
+			bool "Reset invalid packets"
+
+		menu "Sliding Window"
+			depends on ipstack_tcp
+
+			config ipstack_tcp_slidingwnd_send
+				bool "Send Window Support"
+
+			config ipstack_tcp_slidingwnd_recv
+				bool "Receive Window Support"
+    	endmenu
+
+		menu "Silly Window Syndrome Avoidance (SWS)"
+			depends on ipstack_tcp
+
+			config ipstack_tcp_sws_recv
+				bool "SWS Receiver Side Avoidance"
+
+			config ipstack_tcp_sws_send
+				bool "SWS Sender Side Avoidance"
+    	endmenu
+    	
+    	menuconfig ipstack_tcp_limit_retransmissions
+    		depends on ipstack_tcp
+    		bool "Limit excessive Retransmissions"
+    		default y
+    		
+    		config cfTCP_MAX_RETRANSMISSIONS
+				depends on ipstack_tcp_limit_retransmissions
+				int MAX_RETRANSMISSIONS
+				default 10
+				range 3 255
+				help
+					Defines the maximum number of retransmissions for a tcp segment.
+					The connection is closed if any segment exceeds this number.
+					Values range from 3 to 255.
+					
+
+		menu "TCP Options"
+			depends on ipstack_tcp
+
+			config ipstack_tcp_mss
+				bool "Maximum Segment Size (MSS)"
+    	endmenu
+
+		menuconfig ipstack_tcp_rtt
+			depends on ipstack_tcp
+			bool "RTT Estimation"
+			
+			config ipstack_tcp_rtt_backoff
+				depends on ipstack_tcp_rtt
+				bool "Exponential Backoff"
+
+		menuconfig ipstack_tcp_congestionavoidance
+			depends on ipstack_tcp
+			bool "Congestion Avoidance"
+			select ipstack_tcp_slidingwnd_send
+
+			choice
+				prompt "Congestion Avoidance Algorithm"
+				depends on ipstack_tcp_congestionavoidance
+
+				config ipstack_tcp_congestionavoidance_slowstart
+					bool "Slow Start"
+
+			endchoice
+
+		menu "Host Byte Order"
+			depends on ipstack
+
+			choice
+				prompt "Host Byte Order"
+
+				config ipstack_byteorder_little
+					bool "Little Endian"
+
+				config ipstack_byteorder_big
+					bool "Big Endian"
+
+			endchoice
+    	endmenu
+
+		menu "Memory Management"
+			depends on ipstack
+			
+			config cfIPSTACK_MEMORY_GENERIC
+				bool "Generic Memory Management"
+				
+				config cfIPSTACK_PACKET_LIMIT
+					depends on cfIPSTACK_MEMORY_GENERIC
+					int GLOBAL_PACKET_LIMIT_PER_CONNECTION
+					default 16
+
+			config cfIPSTACK_BLOCKSIZE_BIG
+				depends on ipstack
+				int BLOCKSIZE_BIG
+				default 1514
+
+			config cfIPSTACK_COUNT_BIG
+				depends on ipstack
+				int COUNT_BIG
+				default 4
+
+			config cfIPSTACK_BLOCKSIZE_SMALL
+				depends on ipstack
+				int BLOCKSIZE_SMALL
+				default 64
+
+			config cfIPSTACK_COUNT_SMALL
+				depends on ipstack
+				int COUNT_SMALL
+				default 4
+
+	   	endmenu
+

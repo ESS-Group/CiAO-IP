@@ -1,3 +1,0 @@
-scripts/kconfig/mconf.c; line 370,371: modified Prompt
-scripts/kconfig/Makefile; : removed invokation of {,m,q,g}conf
-

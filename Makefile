@@ -5,8 +5,10 @@ CONFIGDIR = config
 ARCH = _msp430
 
 KCONFDIR := kconf
-QCONFFRONTEND ?= $(KCONFDIR)/kconfig/scripts/kconfig/qconf
-MCONFFRONTEND ?= $(KCONFDIR)/kconfig/scripts/kconfig/mconf
+QCONFFRONTEND ?= $(KCONFDIR)/kconfig/qconf
+MCONFFRONTEND ?= $(KCONFDIR)/kconfig/mconf
+#QCONFFRONTEND ?= $(KCONFDIR)/kconfig/scripts/kconfig/qconf
+#MCONFFRONTEND ?= $(KCONFDIR)/kconfig/scripts/kconfig/mconf
 TRANSFORM=$(KCONFDIR)/common/scripts/transform.pl
 
 

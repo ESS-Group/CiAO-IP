@@ -56,6 +56,8 @@ PHONY += scripts_basic
 scripts_basic:
 	$(Q)$(MAKE) $(build)=scripts/basic
 
+undertaker: FORCE
+	$(Q)$(MAKE) -C undertaker $@ MAKEFLAGS=
 
 config: scripts_basic FORCE
 	$(Q)mkdir -p include/linux include/config
@@ -63,6 +65,10 @@ config: scripts_basic FORCE
 
 %config: scripts_basic FORCE
 	$(Q)$(MAKE) $(build)=scripts/kconfig $@
+
+dumpconf: scripts_basic FORCE
+	$(Q)$(MAKE) $(build)=scripts/kconfig $@
+	scripts/kconfig/dumpconf $(KBUILD_KCONFIG)
 
 clean:
 	@find . $(RCS_FIND_IGNORE) \
@@ -77,7 +83,3 @@ FORCE:
 # Declare the contents of the .PHONY variable as phony.  We keep that
 # information in a variable so we can use it in if_changed and friends.
 .PHONY: $(PHONY)
-
-.PHONY: all_config
-all_config: xconfig gconfig menuconfig
-

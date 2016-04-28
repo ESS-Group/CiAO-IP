@@ -10,7 +10,7 @@ CiAO/IP is a configurable TCP/IP stack for small embedded systems. Due to the us
 Usage
 -----
 
- 1. Build KConfig: `make -C kconf/kconfig all_config`
+ 1. Build KConfig: `make -C kconf/kconfig`
  2. Run KConfig: `make xconfig` or `make menuconfig`
  3. Generate configured variant: `make transform`
 
